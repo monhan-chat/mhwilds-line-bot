@@ -9,6 +9,16 @@ from linebot.models import (
 
 app = Flask(__name__)
 
+# 基本的なルート設定
+@app.route('/')
+def index():
+    return 'モンハンワイルズ スキル・装飾品検索ボット'
+
+# 明示的な404ハンドラー
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Not found'}), 404
+
 # LINE API情報を環境変数から取得
 line_bot_api = LineBotApi(os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.environ.get('LINE_CHANNEL_SECRET'))
