@@ -48,69 +48,99 @@ def get_user_settings(user_id):
 
 # JSONデータの読み込み
 try:
-    # 複数の可能性のあるパスを試す
-    possible_data_paths = [
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data'),  # 開発環境パス
-        '/opt/render/project/src/data',  # Renderの一般的なパス
-        os.path.join(os.getcwd(), 'data')  # カレントディレクトリ相対パス
+    # スキルデータ（最重要）
+    skills_data = None
+    
+    # 可能性のあるファイルパスをリストアップ
+    skills_file_paths = [
+        os.path.join('data', 'updated_mhwilds_skills.json'),
+        'updated_mhwilds_skills.json',
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'updated_mhwilds_skills.json'),
+        '/opt/render/project/src/updated_mhwilds_skills.json'
     ]
     
-    data_dir = None
-    for path in possible_data_paths:
+    # 各パスを試す
+    for path in skills_file_paths:
         if os.path.exists(path):
-            data_dir = path
-            print(f"データディレクトリを発見: {path}")
+            with open(path, 'r', encoding='utf-8') as f:
+                skills_data = json.load(f)
+            print(f"スキルデータを読み込みました: {path}")
             break
     
-    if data_dir is None:
-        print("データディレクトリが見つかりません。空のデータを使用します。")
+    # スキルデータが見つからない場合
+    if not skills_data:
+        print("スキルデータファイルが見つかりません。")
         skills_data = []
-        weakness_data = {"モンスター情報": []}
-        tempered_data = {"モンスター一覧": []}
-    else:
-        # スキルデータ
-        skills_path = os.path.join(data_dir, 'updated_mhwilds_skills.json')
-        if os.path.exists(skills_path):
-            with open(skills_path, 'r', encoding='utf-8') as f:
-                skills_data = json.load(f)
-            print(f"スキルデータを読み込みました: {len(skills_data)}件")
-        else:
-            print(f"スキルデータファイルが見つかりません: {skills_path}")
-            skills_data = []
-        
-        # 弱点データ
-        weakness_path = os.path.join(data_dir, 'mhwilds_weakness.json')
-        if os.path.exists(weakness_path):
-            with open(weakness_path, 'r', encoding='utf-8') as f:
+    
+    # 弱点データ
+    weakness_data = {"モンスター情報": []}
+    weakness_file_paths = [
+        os.path.join('data', 'mhwilds_weakness.json'),
+        'mhwilds_weakness.json',
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'mhwilds_weakness.json'),
+        '/opt/render/project/src/mhwilds_weakness.json'
+    ]
+    
+    for path in weakness_file_paths:
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
                 weakness_data = json.load(f)
-            print(f"弱点データを読み込みました: {len(weakness_data.get('モンスター情報', []))}件")
-        else:
-            print(f"弱点データファイルが見つかりません: {weakness_path}")
-            weakness_data = {"モンスター情報": []}
-        
-        # 歴戦モンスターデータ
-        tempered_path = os.path.join(data_dir, 'mhwilds_tempered_monsters.json')
-        if os.path.exists(tempered_path):
-            with open(tempered_path, 'r', encoding='utf-8') as f:
+            print(f"弱点データを読み込みました: {path}")
+            break
+    
+    # 歴戦モンスターデータ
+    tempered_data = {"モンスター一覧": []}
+    tempered_file_paths = [
+        os.path.join('data', 'mhwilds_tempered_monsters.json'),
+        'mhwilds_tempered_monsters.json',
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'mhwilds_tempered_monsters.json'),
+        '/opt/render/project/src/mhwilds_tempered_monsters.json'
+    ]
+    
+    for path in tempered_file_paths:
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
                 tempered_data = json.load(f)
-            print(f"歴戦データを読み込みました: {len(tempered_data.get('モンスター一覧', []))}件")
-        else:
-            print(f"歴戦データファイルが見つかりません: {tempered_path}")
-            tempered_data = {"モンスター一覧": []}
-            
+            print(f"歴戦データを読み込みました: {path}")
+            break
+    
+    # データの概要を出力
+    print(f"読み込まれたデータの概要:")
+    print(f"- スキルデータ: {len(skills_data)} 件")
+    print(f"- 弱点データ: {len(weakness_data.get('モンスター情報', []))} 件")
+    print(f"- 歴戦データ: {len(tempered_data.get('モンスター一覧', []))} 件")
+    
+    # 現在のディレクトリ内のファイル一覧を表示（デバッグ用）
+    print("現在のディレクトリ内のファイル:")
+    for file in os.listdir('.'):
+        print(f"- {file}")
+    
+    # dataディレクトリが存在する場合、その中も表示
+    if os.path.exists('data'):
+        print("dataディレクトリ内のファイル:")
+        for file in os.listdir('data'):
+            print(f"- {file}")
+    
 except Exception as e:
     print(f"データ読み込みエラー: {e}")
+    import traceback
+    traceback.print_exc()
     skills_data = []
     weakness_data = {"モンスター情報": []}
     tempered_data = {"モンスター一覧": []}
 
 # 装飾品辞書の作成（装飾品名からスキル情報を検索できるように）
 deco_to_skill = {}
-for skill in skills_data:
-    for deco in skill.get("装飾品", []):
-        deco_name = deco.get("装飾品名", "")
-        if deco_name:
-            deco_to_skill[deco_name] = skill["スキル名"]
+if skills_data:
+    for skill in skills_data:
+        if "装飾品" in skill:
+            for deco in skill["装飾品"]:
+                deco_name = deco.get("装飾品名", "")
+                if deco_name:
+                    deco_to_skill[deco_name] = skill["スキル名"]
+    print(f"装飾品辞書を作成しました: {len(deco_to_skill)}件")
+else:
+    print("スキルデータがないため、装飾品辞書は空になります")
 
 @app.route("/callback", methods=['POST'])
 def callback():
