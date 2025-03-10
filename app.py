@@ -132,11 +132,9 @@ def handle_message(event):
                 if isinstance(slots, list):
                     slot_count = len(slots)
                 
-                slot_str = '□' * slot_count
-                
                 # スロット情報を含めた表示
                 if slot_count > 0:
-                    reply_text += f"・{armor.get('防具名', '')} (Lv{armor.get('スキルレベル', '')}/{slot_str})\n"
+                    reply_text += f"・{armor.get('防具名', '')} (Lv{armor.get('スキルレベル', '')}/{slot_count})\n"
                 else:
                     reply_text += f"・{armor.get('防具名', '')} (Lv{armor.get('スキルレベル', '')})\n"
         
