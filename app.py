@@ -48,19 +48,56 @@ def get_user_settings(user_id):
 
 # JSONデータの読み込み
 try:
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    # 複数の可能性のあるパスを試す
+    possible_data_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data'),  # 開発環境パス
+        '/opt/render/project/src/data',  # Renderの一般的なパス
+        os.path.join(os.getcwd(), 'data')  # カレントディレクトリ相対パス
+    ]
     
-    # スキルデータ
-    with open(os.path.join(data_dir, 'updated_mhwilds_skills.json'), 'r', encoding='utf-8') as f:
-        skills_data = json.load(f)
+    data_dir = None
+    for path in possible_data_paths:
+        if os.path.exists(path):
+            data_dir = path
+            print(f"データディレクトリを発見: {path}")
+            break
     
-    # 弱点データ
-    with open(os.path.join(data_dir, 'mhwilds_weakness.json'), 'r', encoding='utf-8') as f:
-        weakness_data = json.load(f)
-    
-    # 歴戦モンスターデータ
-    with open(os.path.join(data_dir, 'mhwilds_tempered_monsters.json'), 'r', encoding='utf-8') as f:
-        tempered_data = json.load(f)
+    if data_dir is None:
+        print("データディレクトリが見つかりません。空のデータを使用します。")
+        skills_data = []
+        weakness_data = {"モンスター情報": []}
+        tempered_data = {"モンスター一覧": []}
+    else:
+        # スキルデータ
+        skills_path = os.path.join(data_dir, 'updated_mhwilds_skills.json')
+        if os.path.exists(skills_path):
+            with open(skills_path, 'r', encoding='utf-8') as f:
+                skills_data = json.load(f)
+            print(f"スキルデータを読み込みました: {len(skills_data)}件")
+        else:
+            print(f"スキルデータファイルが見つかりません: {skills_path}")
+            skills_data = []
+        
+        # 弱点データ
+        weakness_path = os.path.join(data_dir, 'mhwilds_weakness.json')
+        if os.path.exists(weakness_path):
+            with open(weakness_path, 'r', encoding='utf-8') as f:
+                weakness_data = json.load(f)
+            print(f"弱点データを読み込みました: {len(weakness_data.get('モンスター情報', []))}件")
+        else:
+            print(f"弱点データファイルが見つかりません: {weakness_path}")
+            weakness_data = {"モンスター情報": []}
+        
+        # 歴戦モンスターデータ
+        tempered_path = os.path.join(data_dir, 'mhwilds_tempered_monsters.json')
+        if os.path.exists(tempered_path):
+            with open(tempered_path, 'r', encoding='utf-8') as f:
+                tempered_data = json.load(f)
+            print(f"歴戦データを読み込みました: {len(tempered_data.get('モンスター一覧', []))}件")
+        else:
+            print(f"歴戦データファイルが見つかりません: {tempered_path}")
+            tempered_data = {"モンスター一覧": []}
+            
 except Exception as e:
     print(f"データ読み込みエラー: {e}")
     skills_data = []
