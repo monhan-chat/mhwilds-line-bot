@@ -296,4 +296,71 @@ def search_tempered_monsters(reply_token, level):
     # 歴戦レベルに合致するモンスターを検索
     tempered_monsters = []
     
-    for monster in tempered_data.get("モンスター一
+    for monster in tempered_data.get("モンスター一覧", []):
+        if monster["歴戦危険度"] == level:
+            tempered_monsters.append(monster["モンスター名"])
+    
+    if tempered_monsters:
+        reply_text = f"【歴戦の個体 危険度{level}{'★' * level}】\n\n"
+        reply_text += "・" + "\n・".join(sorted(tempered_monsters))
+        
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=reply_text)
+        )
+    else:
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=f"歴戦の個体 危険度{level}のモンスターは見つかりませんでした。")
+        )
+
+def search_tempered_monster(reply_token, monster_name):
+    # 特定のモンスターの歴戦レベルを検索
+    tempered_level = None
+    
+    for monster in tempered_data.get("モンスター一覧", []):
+        if monster["モンスター名"] == monster_name:
+            tempered_level = monster["歴戦危険度"]
+            break
+    
+    if tempered_level:
+        reply_text = f"【{monster_name}】\n\n"
+        reply_text += f"▼歴戦の個体危険度: {tempered_level}{'★' * tempered_level}\n"
+        
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=reply_text)
+        )
+    else:
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=f"「{monster_name}」の歴戦情報は見つかりませんでした。")
+        )
+
+def send_help_message(reply_token):
+    help_text = """【モンハンワイルズ情報検索ボット】
+
+■ 使い方
+・スキル/装飾品検索: スキル名や装飾品名を入力
+ 例: 攻撃、見切り、匠珠
+
+・モンスター弱点検索: モンスター名を入力
+ 例: チャタカブラ、リオレウス
+
+・属性弱点検索: 「弱点 属性」と入力
+ 例: 弱点 火、弱点 雷
+
+・歴戦モンスター検索: 「歴戦 レベル」と入力
+ 例: 歴戦 1、歴戦 3
+
+※「ヘルプ」と入力するといつでもこの使い方が表示されます。"""
+
+    line_bot_api.reply_message(
+        reply_token,
+        TextSendMessage(text=help_text)
+    )
+
+# サーバー起動
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
