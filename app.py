@@ -1,6 +1,7 @@
 import json
 import os
-from flask import Flask, request, abort
+import re
+from flask import Flask, request, abort, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
@@ -12,7 +13,7 @@ app = Flask(__name__)
 # 基本的なルート設定
 @app.route('/')
 def index():
-    return 'モンハンワイルズ スキル・装飾品検索ボット'
+    return 'モンハンワイルズ 情報検索ボット（スキル・装飾品・弱点・歴戦モンスター）'
 
 # 明示的な404ハンドラー
 @app.errorhandler(404)
@@ -24,8 +25,25 @@ line_bot_api = LineBotApi(os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.environ.get('LINE_CHANNEL_SECRET'))
 
 # JSONデータの読み込み
-with open('mhwilds_skills.json', 'r', encoding='utf-8') as f:
-    skills_data = json.load(f)
+try:
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    
+    # スキルデータ
+    with open(os.path.join(data_dir, 'updated_mhwilds_skills.json'), 'r', encoding='utf-8') as f:
+        skills_data = json.load(f)
+    
+    # 弱点データ
+    with open(os.path.join(data_dir, 'mhwilds_weakness.json'), 'r', encoding='utf-8') as f:
+        weakness_data = json.load(f)
+    
+    # 歴戦モンスターデータ
+    with open(os.path.join(data_dir, 'mhwilds_tempered_monsters.json'), 'r', encoding='utf-8') as f:
+        tempered_data = json.load(f)
+except Exception as e:
+    print(f"データ読み込みエラー: {e}")
+    skills_data = []
+    weakness_data = {"モンスター情報": []}
+    tempered_data = {"モンスター一覧": []}
 
 # 装飾品辞書の作成（装飾品名からスキル情報を検索できるように）
 deco_to_skill = {}
@@ -52,6 +70,45 @@ def callback():
 def handle_message(event):
     text = event.message.text
     
+    # ヘルプメッセージ
+    if text.lower() in ['ヘルプ', 'help', '使い方']:
+        send_help_message(event.reply_token)
+        return
+    
+    # モンスター弱点検索: 「弱点 チャタカブラ」「チャタカブラ 弱点」などのパターン
+    monster_weakness_pattern = r'^(?:弱点\s*)?([ァ-ヶー・]+)(?:\s*弱点)?$'
+    monster_weakness_match = re.match(monster_weakness_pattern, text)
+    
+    # 弱点属性検索: 「弱点 火」「弱点 水属性」「火属性」のようなパターン
+    weakness_pattern = r'^(?:弱点\s*)?([火水雷氷龍])(?:属性)?$'
+    weakness_match = re.match(weakness_pattern, text)
+    
+    # 歴戦検索: 「歴戦 1」「歴戦レベル2」のようなパターン
+    tempered_pattern = r'^歴戦(?:レベル|の個体|危険度)?\s*([1-3])$'
+    tempered_match = re.match(tempered_pattern, text)
+    
+    # 歴戦モンスター検索: 「歴戦 チャタカブラ」のようなパターン
+    tempered_monster_pattern = r'^歴戦\s+([ァ-ヶー・]+)$'
+    tempered_monster_match = re.match(tempered_monster_pattern, text)
+    
+    # 特定のパターンに基づいて処理
+    if monster_weakness_match:
+        monster_name = monster_weakness_match.group(1)
+        search_monster_weakness(event.reply_token, monster_name)
+    elif weakness_match:
+        element = weakness_match.group(1) + "属性"
+        search_by_weakness(event.reply_token, element)
+    elif tempered_match:
+        level = int(tempered_match.group(1))
+        search_tempered_monsters(event.reply_token, level)
+    elif tempered_monster_match:
+        monster_name = tempered_monster_match.group(1)
+        search_tempered_monster(event.reply_token, monster_name)
+    else:
+        # 上記パターンに合致しない場合は、スキル検索として処理
+        search_skill(event.reply_token, text)
+
+def search_skill(reply_token, text):
     # 検索結果
     result = None
     search_type = ""
@@ -95,17 +152,172 @@ def handle_message(event):
             reply_text += "▼装飾品\n"
             for deco in result["装飾品"]:
                 reply_text += f"・{deco.get('装飾品名', '')} (Lv{deco.get('装飾品Lv', '')})\n"
+            reply_text += "\n"
+        
+        # 防具情報がある場合
+        if "装備" in result and result["装備"]:
+            reply_text += "▼入手装備\n"
+            # スキルレベルが高い順に並べ替え
+            sorted_armors = sorted(result["装備"], key=lambda x: x.get("スキルレベル", 0), reverse=True)
+            for armor in sorted_armors:  # 全ての装備を表示
+                slot_info = ""
+                if "スロット" in armor and armor["スロット"]:
+                    slots = [str(s) for s in armor["スロット"]]
+                    slot_info = f" [スロット:{','.join(slots)}]"
+                reply_text += f"・{armor.get('防具名', '')} (Lv{armor.get('スキルレベル', '')}{slot_info})\n"
         
         line_bot_api.reply_message(
-            event.reply_token,
+            reply_token,
             TextSendMessage(text=reply_text)
         )
     else:
         # 結果が見つからなかった場合
         line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=f"申し訳ありません、「{text}」に関する情報は見つかりませんでした。\nスキル名または装飾品名を入力してください。")
+            reply_token,
+            TextSendMessage(text=f"申し訳ありません、「{text}」に関する情報は見つかりませんでした。\nスキル名、装飾品名、モンスター名、または「ヘルプ」と入力してください。")
         )
+
+def search_monster_weakness(reply_token, monster_name):
+    # 弱点データから検索
+    weakness_info = None
+    for monster in weakness_data.get("モンスター情報", []):
+        if monster["モンスター名"] == monster_name:
+            weakness_info = monster
+            break
+    
+    # 歴戦データから検索
+    tempered_level = None
+    for monster in tempered_data.get("モンスター一覧", []):
+        if monster["モンスター名"] == monster_name:
+            tempered_level = monster["歴戦危険度"]
+            break
+    
+    if weakness_info:
+        # モンスター情報を作成
+        reply_text = f"【{monster_name}の弱点情報】\n\n"
+        
+        # 弱点情報
+        if "弱点" in weakness_info:
+            reply_text += "▼弱点属性\n"
+            for element, value in weakness_info["弱点"].items():
+                reply_text += f"{element}: {value}\n"
+            reply_text += "\n"
+        
+        # 歴戦レベル
+        if tempered_level:
+            reply_text += f"▼歴戦の個体危険度: {tempered_level}{'★' * tempered_level}\n"
+        
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=reply_text)
+        )
+    else:
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=f"申し訳ありません、「{monster_name}」の弱点情報は見つかりませんでした。")
+        )
+
+def search_by_weakness(reply_token, element):
+    # 弱点属性を持つモンスターを検索
+    weak_monsters = []
+    very_weak_monsters = []
+    
+    for monster in weakness_data.get("モンスター情報", []):
+        if "弱点" in monster and element in monster["弱点"]:
+            weakness_level = monster["弱点"][element]
+            if weakness_level == "◎":
+                very_weak_monsters.append(monster["モンスター名"])
+            elif weakness_level == "○":
+                weak_monsters.append(monster["モンスター名"])
+    
+    if weak_monsters or very_weak_monsters:
+        reply_text = f"【{element}に弱いモンスター】\n\n"
+        
+        if very_weak_monsters:
+            reply_text += "▼特効(◎)\n"
+            reply_text += "・" + "\n・".join(sorted(very_weak_monsters)) + "\n\n"
+        
+        if weak_monsters:
+            reply_text += "▼弱点(○)\n"
+            reply_text += "・" + "\n・".join(sorted(weak_monsters))
+        
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=reply_text)
+        )
+    else:
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=f"{element}に弱いモンスターは見つかりませんでした。")
+        )
+
+def search_tempered_monsters(reply_token, level):
+    # 歴戦レベルに合致するモンスターを検索
+    tempered_monsters = []
+    
+    for monster in tempered_data.get("モンスター一覧", []):
+        if monster["歴戦危険度"] == level:
+            tempered_monsters.append(monster["モンスター名"])
+    
+    if tempered_monsters:
+        reply_text = f"【歴戦の個体 危険度{level}{'★' * level}】\n\n"
+        reply_text += "・" + "\n・".join(sorted(tempered_monsters))
+        
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=reply_text)
+        )
+    else:
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=f"歴戦の個体 危険度{level}のモンスターは見つかりませんでした。")
+        )
+
+def search_tempered_monster(reply_token, monster_name):
+    # 特定のモンスターの歴戦レベルを検索
+    tempered_level = None
+    
+    for monster in tempered_data.get("モンスター一覧", []):
+        if monster["モンスター名"] == monster_name:
+            tempered_level = monster["歴戦危険度"]
+            break
+    
+    if tempered_level:
+        reply_text = f"【{monster_name}】\n\n"
+        reply_text += f"▼歴戦の個体危険度: {tempered_level}{'★' * tempered_level}\n"
+        
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=reply_text)
+        )
+    else:
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text=f"「{monster_name}」の歴戦情報は見つかりませんでした。")
+        )
+
+def send_help_message(reply_token):
+    help_text = """【モンハンワイルズ情報検索ボット】
+
+■ 使い方
+・スキル/装飾品検索: スキル名や装飾品名を入力
+ 例: 攻撃、見切り、匠珠
+
+・モンスター弱点検索: モンスター名を入力
+ 例: チャタカブラ、リオレウス
+
+・属性弱点検索: 「弱点 属性」と入力
+ 例: 弱点 火、弱点 雷
+
+・歴戦モンスター検索: 「歴戦 レベル」と入力
+ 例: 歴戦 1、歴戦 3
+
+※「ヘルプ」と入力するといつでもこの使い方が表示されます。"""
+
+    line_bot_api.reply_message(
+        reply_token,
+        TextSendMessage(text=help_text)
+    )
 
 # サーバー起動
 if __name__ == "__main__":
