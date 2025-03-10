@@ -123,12 +123,14 @@ def handle_message(event):
         if result.get("装備"):
             reply_text += f"▼{result['スキル名']}が発動する装備(レベル/スロット数)\n"
             for armor in result["装備"]:
-                # スロット情報の可視化（スロットの数を正確に取得）
+                # スロット情報の可視化
                 slots = armor.get('スロット', [])
-                slot_str = '□' * len(slots)
+                # スロットの値が数値の配列の場合、その配列の長さをスロット数とする
+                slot_count = sum(1 for slot in slots if isinstance(slot, int))
+                slot_str = '□' * slot_count
                 
                 # スロット情報を含めた表示
-                if slots:
+                if slot_count > 0:
                     reply_text += f"・{armor.get('防具名', '')} (Lv{armor.get('スキルレベル', '')}/{slot_str})\n"
                 else:
                     reply_text += f"・{armor.get('防具名', '')} (Lv{armor.get('スキルレベル', '')})\n"
