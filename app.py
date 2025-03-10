@@ -1,3 +1,4 @@
+
 import json
 import os
 import re
@@ -48,27 +49,29 @@ def get_user_settings(user_id):
 
 # JSONデータの読み込み
 try:
-    # スキルデータ（最重要）
-    skills_data = None
-    
-    # 可能性のあるファイルパスをリストアップ
-    skills_file_paths = [
-        os.path.join('data', 'updated_mhwilds_skills.json'),
+    # ファイルパス候補
+    skill_file_candidates = [
         'updated_mhwilds_skills.json',
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'updated_mhwilds_skills.json'),
-        '/opt/render/project/src/updated_mhwilds_skills.json'
+        'mhwilds_skills.json',
+        os.path.join('data', 'updated_mhwilds_skills.json'),
+        os.path.join('data', 'mhwilds_skills.json'),
+        '/opt/render/project/src/updated_mhwilds_skills.json',
+        '/opt/render/project/src/mhwilds_skills.json'
     ]
     
-    # 各パスを試す
-    for path in skills_file_paths:
-        if os.path.exists(path):
-            with open(path, 'r', encoding='utf-8') as f:
-                skills_data = json.load(f)
-            print(f"スキルデータを読み込みました: {path}")
-            break
+    # 存在するファイルを使用
+    skills_data = None
+    used_file = None
     
-    # スキルデータが見つからない場合
-    if not skills_data:
+    for file_path in skill_file_candidates:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                skills_data = json.load(f)
+                used_file = file_path
+                print(f"スキルデータを読み込みました: {file_path}")
+                break
+    
+    if skills_data is None:
         print("スキルデータファイルが見つかりません。")
         skills_data = []
     
@@ -131,16 +134,29 @@ except Exception as e:
 
 # 装飾品辞書の作成（装飾品名からスキル情報を検索できるように）
 deco_to_skill = {}
-if skills_data:
-    for skill in skills_data:
-        if "装飾品" in skill:
-            for deco in skill["装飾品"]:
-                deco_name = deco.get("装飾品名", "")
-                if deco_name:
-                    deco_to_skill[deco_name] = skill["スキル名"]
-    print(f"装飾品辞書を作成しました: {len(deco_to_skill)}件")
-else:
-    print("スキルデータがないため、装飾品辞書は空になります")
+try:
+    if skills_data:
+        for skill in skills_data:
+            if "装飾品" in skill:
+                for deco in skill["装飾品"]:
+                    deco_name = deco.get("装飾品名", "")
+                    if deco_name:
+                        deco_to_skill[deco_name] = skill["スキル名"]
+                        # 装飾品名のバリエーションも登録（「珠」を除いたものなど）
+                        if "珠" in deco_name:
+                            base_name = deco_name.replace("珠", "")
+                            deco_to_skill[base_name] = skill["スキル名"]
+        
+        print(f"装飾品辞書を作成しました: {len(deco_to_skill)}件")
+        # デバッグ用に一部表示
+        sample_entries = list(deco_to_skill.items())[:10]
+        print(f"装飾品辞書のサンプル: {sample_entries}")
+    else:
+        print("スキルデータがないため、装飾品辞書は空になります")
+except Exception as e:
+    print(f"装飾品辞書作成中にエラー: {e}")
+    import traceback
+    traceback.print_exc()
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -171,7 +187,7 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text="どの画像表示をオンにしますか？",
+                text="どの画像表示をオンにするニャ？",
                 quick_reply=quick_reply
             )
         )
@@ -188,7 +204,7 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text="どの画像表示をオフにしますか？",
+                text="どの画像表示をオフにするニャ？",
                 quick_reply=quick_reply
             )
         )
@@ -243,7 +259,7 @@ def handle_message(event):
         if old_setting != settings["show_weakness_image"]:
             notification = "画像表示設定を変更しました:\n・弱点画像: オフ → オン"
         else:
-            notification = "弱点画像表示は既にオンになっています。"
+            notification = "弱点画像表示はオンになってるニャ。"
         
         line_bot_api.reply_message(
             event.reply_token,
@@ -259,7 +275,7 @@ def handle_message(event):
         if old_setting != settings["show_weakness_image"]:
             notification = "画像表示設定を変更しました:\n・弱点画像: オン → オフ"
         else:
-            notification = "弱点画像表示は既にオフになっています。"
+            notification = "弱点画像表示はオフになってるニャ。"
         
         line_bot_api.reply_message(
             event.reply_token,
@@ -275,7 +291,7 @@ def handle_message(event):
         if old_setting != settings["show_tempered_image"]:
             notification = "画像表示設定を変更しました:\n・歴戦画像: オフ → オン"
         else:
-            notification = "歴戦画像表示は既にオンになっています。"
+            notification = "歴戦画像表示はオンになってるニャ。"
         
         line_bot_api.reply_message(
             event.reply_token,
@@ -291,7 +307,7 @@ def handle_message(event):
         if old_setting != settings["show_tempered_image"]:
             notification = "画像表示設定を変更しました:\n・歴戦画像: オン → オフ"
         else:
-            notification = "歴戦画像表示は既にオフになっています。"
+            notification = "歴戦画像表示はオフになってるニャ。"
         
         line_bot_api.reply_message(
             event.reply_token,
@@ -364,7 +380,14 @@ def search_skill(reply_token, text):
     
     # スキル名で見つからなければ装飾品名で検索（部分一致）
     if not result:
+        # 装飾品辞書に直接ある場合
         matching_decos = [deco for deco in deco_to_skill.keys() if text in deco]
+        
+        # 「珠」を追加した検索も試みる
+        if not matching_decos and not text.endswith("珠"):
+            text_with_suffix = text + "珠"
+            matching_decos = [deco for deco in deco_to_skill.keys() if text_with_suffix in deco]
+        
         if matching_decos:
             deco_name = matching_decos[0]  # 最初の一致した装飾品を使用
             skill_name = deco_to_skill[deco_name]
@@ -475,7 +498,7 @@ def search_monster_weakness(reply_token, monster_name, user_id):
     else:
         line_bot_api.reply_message(
             reply_token,
-            TextSendMessage(text=f"申し訳ありません、「{monster_name}」の弱点情報は見つかりませんでした。")
+            TextSendMessage(text=f"申し訳ないニャ、「{monster_name}」の弱点情報が見つけられなかったニャ…")
         )
 
 def search_by_weakness(reply_token, element, user_id):
@@ -528,7 +551,7 @@ def search_by_weakness(reply_token, element, user_id):
     else:
         line_bot_api.reply_message(
             reply_token,
-            TextSendMessage(text=f"{element}に弱いモンスターは見つかりませんでした。")
+            TextSendMessage(text=f"{element}に弱いモンスターは見つかりませんでしたニャ。")
         )
 
 def search_tempered_monsters(reply_token, level, user_id):
@@ -569,7 +592,7 @@ def search_tempered_monsters(reply_token, level, user_id):
     else:
         line_bot_api.reply_message(
             reply_token,
-            TextSendMessage(text=f"歴戦の個体 危険度{level}のモンスターは見つかりませんでした。")
+            TextSendMessage(text=f"歴戦の個体 危険度{level}のモンスターはいないニャ！たぶん…")
         )
 
 def search_tempered_monster(reply_token, monster_name, user_id):
@@ -611,7 +634,7 @@ def search_tempered_monster(reply_token, monster_name, user_id):
     else:
         line_bot_api.reply_message(
             reply_token,
-            TextSendMessage(text=f"「{monster_name}」の歴戦情報は見つかりませんでした。")
+            TextSendMessage(text=f"「{monster_name}」の歴戦情報はわからないニャ。アップデートを待つニャ")
         )
 
 def send_help_message(reply_token):
