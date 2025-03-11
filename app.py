@@ -373,7 +373,6 @@ def search_monster_weakness(monster_name):
             # 弱点情報
             if "弱点" in weakness_info:
                 # 属性アイコンと弱点レベルの辞書を取得
-                attr_icons = weakness_data["属性アイコン"]
                 weakness_levels = weakness_data["弱点レベル"]
                 
                 # 属性別の弱点を表示（強い弱点順にソート）
@@ -396,7 +395,7 @@ def search_monster_weakness(monster_name):
                 for attr, level in sorted_weaknesses:
                     icon = attr_icons.get(attr, "")
                     level_text = weakness_symbols.get(level, level)
-                    reply_text += f"{icon} {attr}: {level} ({level_text})\n"
+                    reply_text += f"{attr}: {level} ({level_text})\n"
                 reply_text += "\n"
                 
                 # 装備推奨の補足情報を追加
@@ -406,7 +405,7 @@ def search_monster_weakness(monster_name):
                 effective_attrs = [attr for attr, level in sorted_weaknesses if level in ["◎", "○"]]
                 
                 if effective_attrs:
-                    reply_text += f"このモンスターには {', '.join([attr_icons.get(attr, '') + attr for attr in effective_attrs])} が効果的ニャ！"
+                    reply_text += f"このモンスターには {', '.join(effective_attrs)} が効果的ニャ！"
                 else:
                     reply_text += "このモンスターには特に弱点となる属性が見当たらないニャァ。。ま、なんとかなるニャ！"
             
