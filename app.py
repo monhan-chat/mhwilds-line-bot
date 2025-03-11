@@ -50,41 +50,177 @@ def handle_message(event):
         send_help_message(reply_token)
         return
     
+    # 特殊なコマンドパターンをチェック
+    is_special_command = False
+    
     # モンスター弱点検索: 「弱点 チャタカブラ」「チャタカブラ 弱点」などのパターン
-    monster_weakness_pattern = r'^(?:弱点\s*)?([ァ-ヶー・]+)(?:\s*弱点)?$'
+    monster_weakness_pattern = r'^(?:弱点\s*[:：])?([ァ-ヶー・]+)(?:\s*弱点)?
+
+def send_help_message(reply_token):
+    help_text = """【モンハンワイルズ情報検索ボット】
+
+■ 使い方
+・スキル/装飾品検索: スキル名や装飾品名を入力
+ 例: 攻撃、見切り、匠珠
+
+・モンスター弱点検索: モンスター名を入力
+ 例: チャタカブラ、リオレウス
+
+・属性弱点検索: 「弱点 属性」と入力
+ 例: 弱点 火、弱点 雷
+
+・歴戦モンスター検索: 「歴戦 レベル」と入力
+ 例: 歴戦 1、歴戦 3
+
+※「ヘルプ」と入力するといつでもこの使い方が表示されます。"""
+
+    line_bot_api.reply_message(
+        reply_token,
+        TextSendMessage(text=help_text)
+    )
+
+# サーバー起動
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
     monster_weakness_match = re.match(monster_weakness_pattern, text)
     
     # 弱点属性検索: 「弱点 火」「弱点 水属性」「火属性」のようなパターン
-    weakness_pattern = r'^(?:弱点\s*)?([火水雷氷龍])(?:属性)?$'
+    weakness_pattern = r'^(?:弱点\s*[:：])?([火水雷氷龍])(?:属性)?
+
+def send_help_message(reply_token):
+    help_text = """【モンハンワイルズ情報検索ボット】
+
+■ 使い方
+・スキル/装飾品検索: スキル名や装飾品名を入力
+ 例: 攻撃、見切り、匠珠
+
+・モンスター弱点検索: モンスター名を入力
+ 例: チャタカブラ、リオレウス
+
+・属性弱点検索: 「弱点 属性」と入力
+ 例: 弱点 火、弱点 雷
+
+・歴戦モンスター検索: 「歴戦 レベル」と入力
+ 例: 歴戦 1、歴戦 3
+
+※「ヘルプ」と入力するといつでもこの使い方が表示されます。"""
+
+    line_bot_api.reply_message(
+        reply_token,
+        TextSendMessage(text=help_text)
+    )
+
+# サーバー起動
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
     weakness_match = re.match(weakness_pattern, text)
     
     # 歴戦検索: 「歴戦 1」「歴戦レベル2」のようなパターン
-    tempered_pattern = r'^歴戦(?:レベル|の個体|危険度)?\s*([1-3])$'
+    tempered_pattern = r'^歴戦(?:レベル|の個体|危険度)?\s*([1-3])
+
+def send_help_message(reply_token):
+    help_text = """【モンハンワイルズ情報検索ボット】
+
+■ 使い方
+・スキル/装飾品検索: スキル名や装飾品名を入力
+ 例: 攻撃、見切り、匠珠
+
+・モンスター弱点検索: モンスター名を入力
+ 例: チャタカブラ、リオレウス
+
+・属性弱点検索: 「弱点 属性」と入力
+ 例: 弱点 火、弱点 雷
+
+・歴戦モンスター検索: 「歴戦 レベル」と入力
+ 例: 歴戦 1、歴戦 3
+
+※「ヘルプ」と入力するといつでもこの使い方が表示されます。"""
+
+    line_bot_api.reply_message(
+        reply_token,
+        TextSendMessage(text=help_text)
+    )
+
+# サーバー起動
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
     tempered_match = re.match(tempered_pattern, text)
     
     # 歴戦モンスター検索: 「歴戦 チャタカブラ」のようなパターン
-    tempered_monster_pattern = r'^歴戦\s+([ァ-ヶー・]+)$'
+    tempered_monster_pattern = r'^歴戦\s+([ァ-ヶー・]+)
+
+def send_help_message(reply_token):
+    help_text = """【モンハンワイルズ情報検索ボット】
+
+■ 使い方
+・スキル/装飾品検索: スキル名や装飾品名を入力
+ 例: 攻撃、見切り、匠珠
+
+・モンスター弱点検索: モンスター名を入力
+ 例: チャタカブラ、リオレウス
+
+・属性弱点検索: 「弱点 属性」と入力
+ 例: 弱点 火、弱点 雷
+
+・歴戦モンスター検索: 「歴戦 レベル」と入力
+ 例: 歴戦 1、歴戦 3
+
+※「ヘルプ」と入力するといつでもこの使い方が表示されます。"""
+
+    line_bot_api.reply_message(
+        reply_token,
+        TextSendMessage(text=help_text)
+    )
+
+# サーバー起動
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
     tempered_monster_match = re.match(tempered_monster_pattern, text)
     
     # 特定のパターンに基づいて処理
-    if monster_weakness_match:
-        monster_name = monster_weakness_match.group(1)
+    if text.startswith('弱点:') or text.startswith('弱点：'):
+        is_special_command = True
+        monster_name = text[3:].strip()
         result = search_monster_weakness(monster_name)
         line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
+    elif text.startswith('歴戦:') or text.startswith('歴戦：'):
+        is_special_command = True
+        monster_name = text[3:].strip()
+        result = search_tempered_monster(monster_name)
+        line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
+    elif monster_weakness_match and not text.isalpha():  # 単一のカタカナ語のみの場合はスキル検索を優先
+        monster_name = monster_weakness_match.group(1)
+        # モンスター名が明確な場合のみ弱点検索を実行
+        if len(monster_name) >= 3:  # 3文字以上のモンスター名のみ
+            is_special_command = True
+            result = search_monster_weakness(monster_name)
+            line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
     elif weakness_match:
+        is_special_command = True
         element = weakness_match.group(1) + "属性"
         result = search_by_weakness(element)
         line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
     elif tempered_match:
+        is_special_command = True
         level = int(tempered_match.group(1))
         result = search_tempered_monsters(level)
         line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
     elif tempered_monster_match:
+        is_special_command = True
         monster_name = tempered_monster_match.group(1)
         result = search_tempered_monster(monster_name)
         line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
-    else:
-        # 上記パターンに合致しない場合は、スキル検索として処理
+    
+    # 特殊コマンドでない場合、スキル検索として処理
+    if not is_special_command:
         result = search_skill(text)
         line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
 
