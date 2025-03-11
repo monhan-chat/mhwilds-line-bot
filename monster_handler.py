@@ -86,9 +86,9 @@ def search_monster_weakness(monster_name):
             effective_attrs = [attr for attr, level in sorted_weaknesses if level in ["◎", "○"]]
             
             if effective_attrs:
-                reply_text += f"このモンスターには {', '.join([attr_icons.get(attr, '') + attr for attr in effective_attrs])} が効果的です。"
+                reply_text += f"このモンスターには {', '.join([attr_icons.get(attr, '') + attr for attr in effective_attrs])} が効果的ニャ！"
             else:
-                reply_text += "このモンスターには特に弱点となる属性がありません。物理攻撃を中心に戦いましょう。"
+                reply_text += "このモンスターには特に弱点となる属性が見当たらないニャァ。。ま、なんとかなるニャ！"
         
         # 歴戦レベル
         if tempered_level:
@@ -96,7 +96,7 @@ def search_monster_weakness(monster_name):
         
         return reply_text
     else:
-        return f"申し訳ありません、「{monster_name}」の弱点情報は見つかりませんでした。"
+        return f"ごめんニャ、「{monster_name}」の弱点情報が見つけられないニャ。"
 
 def search_by_weakness(element):
     """
@@ -127,7 +127,7 @@ def search_by_weakness(element):
         
         return reply_text
     else:
-        return f"{element}に弱いモンスターは見つかりませんでした。"
+        return f"[{element}]に弱いモンスターはいないニャ…変だニャ…"
 
 def search_tempered_monsters(level):
     """
@@ -147,7 +147,7 @@ def search_tempered_monsters(level):
         
         return reply_text
     else:
-        return f"歴戦の個体 危険度{level}のモンスターは見つかりませんでした。"
+        return f"歴戦の個体 危険度{level}のモンスターはいないのニャ。"
 
 def search_tempered_monster(monster_name):
     """
@@ -180,4 +180,4 @@ def search_tempered_monster(monster_name):
         
         return reply_text
     else:
-        return f"「{monster_name}」の歴戦情報は見つかりませんでした。"
+        return f"「{monster_name}」の歴戦情報が見つからないニャ～。待ってみるニャ。"
