@@ -21,6 +21,39 @@ MONSTER_NAMES = [
     "グラビモス", "護竜アンジャナフ亜種", "ゴア・マガラ", "アルシュベルド", "タマミツネ"
 ]
 
+# モンスター名の正規化マッピング
+MONSTER_ALIASES = {
+    # "・"を除去したエイリアス
+    "ラバラバリナ": "ラバラ・バリナ",
+    "レダウ": "レ・ダウ",
+    "ヌエグドラ": "ヌ・エグドラ",
+    "ゾシア": "ゾ・シア",
+    "ジンダハド": "ジン・ダハド",
+    "ゴアマガラ": "ゴア・マガラ",
+    
+    # "亜種"を除去したエイリアス
+    "護竜オドガロン": "護竜オドガロン亜種",
+    "護竜アンジャナフ": "護竜アンジャナフ亜種"
+}
+
+# 自動的にエイリアスをさらに生成する
+additional_aliases = {}
+for name in MONSTER_NAMES:
+    # "・"を含む名前には、"・"を除去したエイリアスを追加
+    if "・" in name:
+        alias = name.replace("・", "")
+        if alias not in MONSTER_ALIASES and alias not in MONSTER_NAMES:
+            additional_aliases[alias] = name
+    
+    # "亜種"を含む名前には、"亜種"を除去したエイリアスを追加
+    if "亜種" in name:
+        alias = name.replace("亜種", "")
+        if alias not in MONSTER_ALIASES and alias not in MONSTER_NAMES:
+            additional_aliases[alias] = name
+
+# 手動定義したエイリアスを優先しつつ追加エイリアスを統合
+MONSTER_ALIASES.update(additional_aliases)
+
 # 属性リスト
 ELEMENTS = ["火", "水", "雷", "氷", "龍"]
 
@@ -87,11 +120,21 @@ def handle_message(event):
         line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
         return
     
+    # モンスター名のエイリアス処理
+    normalized_monster_name = MONSTER_ALIASES.get(text)
+    if normalized_monster_name and normalized_monster_name in MONSTER_NAMES:
+        result = search_monster_weakness(normalized_monster_name)
+        line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
+        return
+    
     # 3. 特定のパターンでの検索
     
+    # 半角/全角スペースを半角に統一
+    normalized_text = text.replace('　', ' ')
+    
     # 弱点 属性のパターン
-    if text.startswith('弱点 '):
-        element_text = text[3:].strip()
+    if normalized_text.startswith('弱点 '):
+        element_text = normalized_text[3:].strip()
         for element in ELEMENTS:
             if element_text == element or element_text == element + "属性":
                 result = search_by_weakness(element + "属性")
@@ -101,17 +144,17 @@ def handle_message(event):
     # 属性 弱点のパターン
     for element in ELEMENTS:
         # 火属性 弱点、火 弱点などのパターン
-        if (text.startswith(element + "属性 弱") or 
-            text.startswith(element + " 弱") or 
-            text == element + "属性弱点" or 
-            text == element + "弱点"):
+        if (normalized_text.startswith(element + "属性 弱") or 
+            normalized_text.startswith(element + " 弱") or 
+            normalized_text == element + "属性弱点" or 
+            normalized_text == element + "弱点"):
             result = search_by_weakness(element + "属性")
             line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
             return
     
     # 歴戦 1, 歴戦 2, 歴戦 3のパターン
-    if text.startswith('歴戦 ') and len(text) >= 4:
-        level_text = text[3]
+    if normalized_text.startswith('歴戦 ') and len(normalized_text) >= 4:
+        level_text = normalized_text[3]
         if level_text in ['1', '2', '3']:
             level = int(level_text)
             result = search_tempered_monsters(level)
@@ -119,18 +162,33 @@ def handle_message(event):
             return
     
     # 歴戦 モンスター名のパターン
-    if text.startswith('歴戦 '):
-        monster_name = text[3:].strip()
+    if normalized_text.startswith('歴戦 '):
+        monster_name = normalized_text[3:].strip()
+        # 正確なモンスター名のチェック
         for name in MONSTER_NAMES:
             if monster_name == name:
                 result = search_tempered_monster(monster_name)
                 line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
                 return
+        
+        # エイリアスのチェック
+        normalized_monster_name = MONSTER_ALIASES.get(monster_name)
+        if normalized_monster_name and normalized_monster_name in MONSTER_NAMES:
+            result = search_tempered_monster(normalized_monster_name)
+            line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
+            return
     
     # モンスター名 弱点のパターン
     for name in MONSTER_NAMES:
-        if text == name + " 弱点" or text == name + "弱点":
+        if normalized_text == name + " 弱点" or normalized_text == name + "弱点":
             result = search_monster_weakness(name)
+            line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
+            return
+    
+    # モンスター名のエイリアス + 弱点のパターン
+    for alias, actual_name in MONSTER_ALIASES.items():
+        if normalized_text == alias + " 弱点" or normalized_text == alias + "弱点":
+            result = search_monster_weakness(actual_name)
             line_bot_api.reply_message(reply_token, TextSendMessage(text=result))
             return
     
